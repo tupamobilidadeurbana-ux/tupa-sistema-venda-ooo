@@ -44,6 +44,24 @@
         width: 100% !important;
         z-index: 1;
       }
+      #billing-map {
+        height: 600px !important;
+        width: 100% !important;
+        position: relative !important;
+        z-index: 10;
+        background: #e2e8f0;
+      }
+      #billing-map .leaflet-container {
+        height: 100% !important;
+        width: 100% !important;
+      }
+      /* Ensure Leaflet tiles are visible */
+      .leaflet-tile-pane {
+        z-index: 2;
+      }
+      .leaflet-tile {
+        visibility: visible !important;
+      }
     </style>
   <script type="importmap">
 {
