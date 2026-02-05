@@ -102,7 +102,6 @@ const Manager: React.FC<ManagerProps> = ({
     photoPosition: '50% 50%'
   });
 
-  // Função auxiliar para exibir data BR sem erro de fuso horário
   const formatDisplayDate = (dateStr?: string) => {
     if (!dateStr) return "N/A";
     const parts = dateStr.split('-');
@@ -216,12 +215,10 @@ const Manager: React.FC<ManagerProps> = ({
     }
   };
 
-  // LÓGICA DO MAPA DE VENCIMENTOS (Busca exata do dia selecionado)
   const filteredBilling = useMemo(() => {
     if (!hasSearchedBilling) return []; 
     if (!billingStartDate && !billingEndDate) return [];
 
-    // Se o usuário digitar 21/07 na data inicial, o sistema busca exatamente 21/07.
     const effectiveStartDate = billingStartDate || billingEndDate;
     const effectiveEndDate = billingEndDate || billingStartDate;
     
@@ -236,12 +233,18 @@ const Manager: React.FC<ManagerProps> = ({
   }, [acquisitions, billingStartDate, billingEndDate, hasSearchedBilling]);
 
   useEffect(() => {
-    if (isAuthorized && activeTab === 'billingMap' && !mapRef.current) {
+    if (isAuthorized && activeTab === 'billingMap') {
       const initMap = () => {
         const container = document.getElementById('billing-map');
         if (!container) return;
+        
+        if (mapRef.current) {
+          mapRef.current.remove();
+        }
+        
         mapRef.current = L.map('billing-map').setView([-23.5505, -46.6333], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
+        
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition((pos) => {
             if (mapRef.current) {
@@ -253,11 +256,12 @@ const Manager: React.FC<ManagerProps> = ({
           });
         }
       };
-      setTimeout(initMap, 100);
+      
+      const timer = setTimeout(initMap, 200);
+      return () => {
+        clearTimeout(timer);
+      };
     }
-    return () => {
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    };
   }, [activeTab, isAuthorized]);
 
   useEffect(() => {
@@ -473,11 +477,11 @@ const Manager: React.FC<ManagerProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nome do Cliente</label>
-                    <input type="text" className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold" value={saleEditForm.clientName} onChange={e => setSaleEditForm({...saleEditForm, clientName: e.target.value})} />
+                    <input type="text" className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={saleEditForm.clientName} onChange={e => setSaleEditForm({...saleEditForm, clientName: e.target.value})} />
                  </div>
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Telefone / WhatsApp</label>
-                    <input type="text" className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold" value={saleEditForm.clientPhone} onChange={e => setSaleEditForm({...saleEditForm, clientPhone: e.target.value})} />
+                    <input type="text" className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={saleEditForm.clientPhone} onChange={e => setSaleEditForm({...saleEditForm, clientPhone: e.target.value})} />
                  </div>
               </div>
 
@@ -503,11 +507,11 @@ const Manager: React.FC<ManagerProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valor Total do Projeto (R$)</label>
-                      <input type="number" className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold" value={saleEditForm.totalValue} onChange={e => setSaleEditForm({...saleEditForm, totalValue: parseFloat(e.target.value)})} />
+                      <input type="number" className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold text-slate-900" value={saleEditForm.totalValue} onChange={e => setSaleEditForm({...saleEditForm, totalValue: parseFloat(e.target.value)})} />
                    </div>
                    <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Vencimento Próxima Parcela</label>
-                      <input type="date" className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold" value={saleEditForm.paymentDate} onChange={e => setSaleEditForm({...saleEditForm, paymentDate: e.target.value})} />
+                      <input type="date" className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl font-bold text-slate-900" value={saleEditForm.paymentDate} onChange={e => setSaleEditForm({...saleEditForm, paymentDate: e.target.value})} />
                    </div>
                 </div>
               </div>
@@ -585,7 +589,7 @@ const Manager: React.FC<ManagerProps> = ({
         </nav>
 
         {activeTab === 'sites' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 text-slate-900">
             <div className="lg:col-span-1 space-y-10">
               <section className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
                 <h2 className="text-2xl font-black mb-8 text-slate-900 tracking-tight uppercase">Segmentos</h2>
@@ -598,7 +602,7 @@ const Manager: React.FC<ManagerProps> = ({
                     <div key={c.id} className="group relative">
                       {editingCategoryId === c.id ? (
                         <div className="flex gap-2">
-                          <input type="text" className="flex-1 px-4 py-3 bg-white border-2 border-blue-600 rounded-xl outline-none font-bold text-[9px] uppercase tracking-widest" value={editingCategoryName} onChange={(e) => setEditingCategoryName(e.target.value)} autoFocus />
+                          <input type="text" className="flex-1 px-4 py-3 bg-white border-2 border-blue-600 rounded-xl outline-none font-bold text-[9px] uppercase tracking-widest text-slate-900" value={editingCategoryName} onChange={(e) => setEditingCategoryName(e.target.value)} autoFocus />
                           <button onClick={() => handleUpdateCategory(c.id, editingCategoryName)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg></button>
                           <button onClick={() => setEditingCategoryId(null)} className="p-3 bg-slate-200 text-slate-500 rounded-xl hover:bg-slate-300 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
@@ -622,20 +626,20 @@ const Manager: React.FC<ManagerProps> = ({
                 <form onSubmit={handleSiteSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="md:col-span-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Título do Projeto</label>
-                    <input type="text" className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold" value={siteForm.title} onChange={(e) => setSiteForm({ ...siteForm, title: e.target.value })} />
+                    <input type="text" className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={siteForm.title} onChange={(e) => setSiteForm({ ...siteForm, title: e.target.value })} />
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Live URL</label>
-                    <input type="url" className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold" value={siteForm.link} onChange={(e) => setSiteForm({ ...siteForm, link: e.target.value })} />
+                    <input type="url" className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={siteForm.link} onChange={(e) => setSiteForm({ ...siteForm, link: e.target.value })} />
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Categoria</label>
-                    <select className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-black text-[10px] uppercase" value={siteForm.categoryId} onChange={(e) => setSiteForm({ ...siteForm, categoryId: e.target.value })}>
+                    <select className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-black text-[10px] uppercase text-slate-900" value={siteForm.categoryId} onChange={(e) => setSiteForm({ ...siteForm, categoryId: e.target.value })}>
                       <option value="">Selecione...</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 text-center">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Mídia de Capa (Imagem ou Vídeo)</label>
                     <input type="file" ref={siteFileRef} className="hidden" accept="image/*,video/*" onChange={handleSiteFileChange} />
                     <div onClick={() => siteFileRef.current?.click()} className="w-full h-64 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 hover:border-blue-300 transition-all overflow-hidden relative group">
@@ -719,7 +723,7 @@ const Manager: React.FC<ManagerProps> = ({
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Descrição Curta</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 text-center md:text-left">Descrição Curta</label>
                     <textarea 
                       className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-medium text-slate-700" 
                       rows={3}
@@ -737,7 +741,7 @@ const Manager: React.FC<ManagerProps> = ({
                   <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                     <svg className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                   </div>
-                  <input type="text" placeholder="Buscar nos sites demo por nome ou categoria..." className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 font-bold text-slate-700 shadow-sm transition-all" value={siteSearchQuery} onChange={(e) => setSiteSearchQuery(e.target.value)} />
+                  <input type="text" placeholder="Buscar nos sites demo por nome ou categoria..." className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 font-bold text-slate-900 shadow-sm transition-all" value={siteSearchQuery} onChange={(e) => setSiteSearchQuery(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredSites.map(s => (
@@ -767,16 +771,16 @@ const Manager: React.FC<ManagerProps> = ({
                 <form onSubmit={handleConsultantSubmit} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">Nome Completo</label>
-                    <input type="text" placeholder="Nome do Consultor" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold" value={consultantForm.name} onChange={(e) => setConsultantForm({ ...consultantForm, name: e.target.value })} />
+                    <input type="text" placeholder="Nome do Consultor" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={consultantForm.name} onChange={(e) => setConsultantForm({ ...consultantForm, name: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">CPF</label>
-                      <input type="text" placeholder="000.000.000-00" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold" value={consultantForm.cpf} onChange={(e) => setConsultantForm({ ...consultantForm, cpf: e.target.value.replace(/\D/g,'') })} />
+                      <input type="text" placeholder="000.000.000-00" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={consultantForm.cpf} onChange={(e) => setConsultantForm({ ...consultantForm, cpf: e.target.value.replace(/\D/g,'') })} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">WhatsApp</label>
-                      <input type="tel" placeholder="00000000000" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold" value={consultantForm.whatsapp} onChange={(e) => setConsultantForm({ ...consultantForm, whatsapp: e.target.value.replace(/\D/g,'') })} />
+                      <input type="tel" placeholder="00000000000" className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 font-bold text-slate-900" value={consultantForm.whatsapp} onChange={(e) => setConsultantForm({ ...consultantForm, whatsapp: e.target.value.replace(/\D/g,'') })} />
                     </div>
                   </div>
                   
@@ -849,12 +853,12 @@ const Manager: React.FC<ManagerProps> = ({
              <div className="space-y-6 overflow-y-auto max-h-[800px] pr-2 scrollbar-hide">
                 {consultants.map(c => (
                   <div key={c.id} className={`p-8 bg-white rounded-[3rem] border shadow-sm transition-all hover:shadow-2xl group relative overflow-hidden ${editingConsultantId === c.id ? 'border-blue-500' : 'border-slate-100'}`}>
-                    <div className="flex items-center gap-6 mb-8">
+                    <div className="flex items-center gap-6 mb-8 text-slate-900">
                       <div className="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-50">
                         <img src={c.photoUrl} className="w-full h-full object-cover" style={{ objectPosition: c.photoPosition || '50% 50%' }} />
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-slate-900 uppercase tracking-tighter text-2xl mb-1">{c.name}</p>
+                        <p className="font-black uppercase tracking-tighter text-2xl mb-1">{c.name}</p>
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">WhatsApp: {c.whatsapp || 'N/A'}</p>
                       </div>
                       <div className="flex flex-col gap-2">
@@ -875,11 +879,11 @@ const Manager: React.FC<ManagerProps> = ({
         {activeTab === 'sales' && (
           <div className="space-y-10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Fluxo Comercial</h2>
-              <div className="bg-blue-600 text-white px-8 py-3 rounded-full text-[12px] font-black uppercase tracking-[0.2em]">{filteredAcquisitions.length} Negócios</div>
+              <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none text-center md:text-left">Fluxo Comercial</h2>
+              <div className="bg-blue-600 text-white px-8 py-3 rounded-full text-[12px] font-black uppercase tracking-[0.2em] w-fit mx-auto md:mx-0">{filteredAcquisitions.length} Negócios</div>
             </div>
             <div className="mb-6 relative group">
-              <input type="text" placeholder="Pesquisar venda por cliente ou site..." className="w-full px-8 py-5 bg-white border border-slate-200 rounded-3xl outline-none focus:border-blue-600 font-bold shadow-sm" value={saleSearchQuery} onChange={(e) => setSaleSearchQuery(e.target.value)} />
+              <input type="text" placeholder="Pesquisar venda por cliente ou site..." className="w-full px-8 py-5 bg-white border border-slate-200 rounded-3xl outline-none focus:border-blue-600 font-bold shadow-sm text-slate-900" value={saleSearchQuery} onChange={(e) => setSaleSearchQuery(e.target.value)} />
             </div>
             <div className="grid grid-cols-1 gap-8">
               {filteredAcquisitions.map(acq => (
@@ -919,7 +923,7 @@ const Manager: React.FC<ManagerProps> = ({
                   <label className="text-[10px] font-black text-[#2563eb] uppercase tracking-widest px-2">Data Inicial</label>
                   <input 
                     type="date" 
-                    className="px-6 py-4 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-600 transition-all" 
+                    className="px-6 py-4 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-600 transition-all text-slate-900" 
                     value={billingStartDate} 
                     onChange={(e) => {setBillingStartDate(e.target.value); setHasSearchedBilling(false);}} 
                   />
@@ -928,7 +932,7 @@ const Manager: React.FC<ManagerProps> = ({
                   <label className="text-[10px] font-black text-[#2563eb] uppercase tracking-widest px-2">Data Final</label>
                   <input 
                     type="date" 
-                    className="px-6 py-4 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-600 transition-all" 
+                    className="px-6 py-4 bg-white border-2 border-blue-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-600 transition-all text-slate-900" 
                     value={billingEndDate} 
                     onChange={(e) => {setBillingEndDate(e.target.value); setHasSearchedBilling(false);}} 
                   />
@@ -954,10 +958,10 @@ const Manager: React.FC<ManagerProps> = ({
             </div>
             
             <div className="relative group">
-               <div id="billing-map" className="shadow-2xl border-4 border-white"></div>
-               <div className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-xl">
+               <div id="billing-map" className="shadow-2xl border-4 border-white h-[600px] min-h-[500px] w-full bg-slate-100 z-10 rounded-2xl overflow-hidden"></div>
+               <div className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-xl text-slate-900">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total no Intervalo</p>
-                  <p className="text-2xl font-black text-slate-900">R$ {filteredBilling.reduce((acc, curr) => acc + (curr.installmentValue || 0), 0).toLocaleString('pt-BR')}</p>
+                  <p className="text-2xl font-black">R$ {filteredBilling.reduce((acc, curr) => acc + (curr.installmentValue || 0), 0).toLocaleString('pt-BR')}</p>
                </div>
                <button onClick={handleNextClient} className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900 text-white px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl hover:scale-105 transition-all">Navegar pelos Pontos</button>
             </div>
@@ -1012,15 +1016,15 @@ const Manager: React.FC<ManagerProps> = ({
                 <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl">
                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Segurança</h2>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-10">Alteração da Chave Mestra do Painel</p>
+                <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter text-center">Segurança</h2>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-10 text-center">Alteração da Chave Mestra do Painel</p>
                 
                 <div className="space-y-6 text-left">
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nova Senha de Acesso</label>
                       <input 
                         type="text" 
-                        className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-black tracking-[0.3em] text-center" 
+                        className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-600 font-black tracking-[0.3em] text-center text-slate-900" 
                         placeholder="••••••••"
                         value={newPass}
                         onChange={e => setNewPass(e.target.value)}
@@ -1033,7 +1037,7 @@ const Manager: React.FC<ManagerProps> = ({
                      Atualizar Chave
                    </button>
                 </div>
-                <p className="mt-10 text-slate-300 text-[9px] font-bold uppercase tracking-widest leading-relaxed italic">Atenção: A nova senha entrará em vigor imediatamente para todos os acessos ao gestor.</p>
+                <p className="mt-10 text-slate-300 text-[9px] font-bold uppercase tracking-widest leading-relaxed italic text-center">Atenção: A nova senha entrará em vigor imediatamente para todos os acessos ao gestor.</p>
              </div>
           </div>
         )}
