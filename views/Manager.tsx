@@ -233,44 +233,81 @@ const Manager: React.FC<ManagerProps> = ({
 
   useEffect(() => {
     if (isAuthorized && activeTab === 'billingMap') {
+      let cancelled = false;
+      const timers: ReturnType<typeof setTimeout>[] = [];
+
+      const waitForLeaflet = (cb: () => void, attempts = 0) => {
+        if (typeof L !== 'undefined') { cb(); return; }
+        if (attempts > 50) return; // safety: stop after ~5s
+        const t = setTimeout(() => waitForLeaflet(cb, attempts + 1), 100);
+        timers.push(t);
+      };
+
       const initMap = () => {
+        if (cancelled) return;
         const container = document.getElementById('billing-map');
         if (!container) return;
-        
+
+        // Ensure container has explicit pixel dimensions before Leaflet init
+        container.style.height = '600px';
+        container.style.width = '100%';
+        container.style.position = 'relative';
+
         if (mapRef.current) {
-          mapRef.current.remove();
+          try { mapRef.current.remove(); } catch (_e) { /* ignore */ }
+          mapRef.current = null;
         }
-        
-        mapRef.current = L.map('billing-map').setView([-23.5505, -46.6333], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
-        
-        // Corrige bug do mapa ficar cinza ou sumir
-        setTimeout(() => {
-          if (mapRef.current) mapRef.current.invalidateSize();
-        }, 500);
+
+        mapRef.current = L.map('billing-map', {
+          center: [-23.5505, -46.6333],
+          zoom: 12,
+          zoomControl: true,
+          attributionControl: true,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+
+        // Corrige bug do mapa ficar cinza ou sumir – chamadas múltiplas
+        const invalidate = () => { if (mapRef.current) mapRef.current.invalidateSize(); };
+        timers.push(setTimeout(invalidate, 100));
+        timers.push(setTimeout(invalidate, 300));
+        timers.push(setTimeout(invalidate, 600));
+        timers.push(setTimeout(invalidate, 1200));
 
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition((pos) => {
-            if (mapRef.current) {
+            if (mapRef.current && !cancelled) {
               const uLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
               setUserLocation(uLoc);
               mapRef.current.setView([uLoc.lat, uLoc.lng], 13);
               L.circleMarker([uLoc.lat, uLoc.lng], { radius: 10, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.5 }).addTo(mapRef.current).bindPopup("<b>Sua Localização</b>");
+              invalidate();
             }
           });
         }
       };
-      
-      const timer = setTimeout(initMap, 200);
+
+      // Wait for DOM + Leaflet to be ready, then init
+      const startTimer = setTimeout(() => waitForLeaflet(initMap), 100);
+      timers.push(startTimer);
+
       return () => {
-        clearTimeout(timer);
+        cancelled = true;
+        timers.forEach(t => clearTimeout(t));
+        if (mapRef.current) {
+          try { mapRef.current.remove(); } catch (_e) { /* ignore */ }
+          mapRef.current = null;
+        }
       };
     }
   }, [activeTab, isAuthorized]);
 
   useEffect(() => {
-    if (isAuthorized && mapRef.current && activeTab === 'billingMap') {
-      markersRef.current.forEach(m => mapRef.current.removeLayer(m));
+    if (isAuthorized && mapRef.current && activeTab === 'billingMap' && typeof L !== 'undefined') {
+      markersRef.current.forEach(m => { try { mapRef.current.removeLayer(m); } catch (_e) { /* ignore */ } });
       markersRef.current.clear();
       filteredBilling.forEach(acq => {
         if (acq.location) {
@@ -293,6 +330,8 @@ const Manager: React.FC<ManagerProps> = ({
           markersRef.current.set(acq.id, m);
         }
       });
+      // Ensure tiles re-render after adding markers
+      setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
     }
   }, [filteredBilling, activeTab, isAuthorized]);
 
@@ -961,8 +1000,8 @@ const Manager: React.FC<ManagerProps> = ({
               </div>
             </div>
             
-            <div className="relative group overflow-hidden rounded-[3rem] shadow-2xl border-4 border-white bg-slate-50">
-               <div id="billing-map" className="h-[600px] w-full z-10"></div>
+            <div className="relative group rounded-[3rem] shadow-2xl border-4 border-white bg-slate-50" style={{ overflow: 'hidden' }}>
+               <div id="billing-map" style={{ height: '600px', width: '100%', zIndex: 10, position: 'relative', background: '#e2e8f0' }}></div>
                <div className="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-slate-200 shadow-xl text-slate-900">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Volume no Período</p>
                   <p className="text-3xl font-black text-blue-600">R$ {filteredBilling.reduce((acc, curr) => acc + (curr.installmentValue || 0), 0).toLocaleString('pt-BR')}</p>
