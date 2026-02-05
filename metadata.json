@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Copy of TUPÃ Enterprise",
+  "description": "Uma plataforma de alta performance para gerentes criarem e organizarem sites de demonstração, apresentando uma busca inteligente movida por IA que corrige erros de digitação e entende a intenção do usuário.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
