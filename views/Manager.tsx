@@ -736,7 +736,7 @@ const Manager: React.FC<ManagerProps> = ({
                     ></textarea>
                   </div>
 
-                  <div className="md:col-span-2"><button type="submit" className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl hover:bg-blue-600 transition-all active:scale-95">{editingSiteId ? 'Atualizar Projeto' : 'Publicar Demonstração'}</button></div>
+                  <div className="md:col-span-2"><button type="submit" className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-[11px] uppercase tracking-[0.3em] shadow-xl hover:bg-blue-600 transition-all active:scale-95">{editingSiteId ? 'Atualizar Projeto' : 'Publicar Demonstração'}</button></div>
                 </form>
               </section>
 
